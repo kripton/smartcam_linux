@@ -110,10 +110,10 @@ void CCommHandler::RegisterBtService(uint8_t rfcommChannel)
     const char* service_prov = "Deion";
 
     uuid_t root_uuid, l2cap_uuid, rfcomm_uuid, svc_uuid;
-    sdp_list_t *l2cap_list = 0, 
+    sdp_list_t *l2cap_list = 0,
     *rfcomm_list = 0,
     *root_list = 0,
-    *proto_list = 0, 
+    *proto_list = 0,
     *access_proto_list = 0;
     sdp_data_t* channel = 0, *psm = 0;
 
@@ -150,7 +150,9 @@ void CCommHandler::RegisterBtService(uint8_t rfcommChannel)
     int err = 0;
 
     // connect to the local SDP server, register the service record
-    sdpSession = sdp_connect(BDADDR_ANY, BDADDR_LOCAL, SDP_RETRY_IF_BUSY);
+    bdaddr_t any = {0, 0, 0, 0xff, 0xff, 0xff};
+    bdaddr_t local = {0, 0, 0, 0xff, 0xff, 0xff};
+    sdpSession = sdp_connect(&any, &local, SDP_RETRY_IF_BUSY);
     err = sdp_record_register(sdpSession, sdpRecord, 0);
     if(err)
     {
@@ -189,8 +191,9 @@ int CCommHandler::StartBtServer()
     serverSocket = socket(AF_BLUETOOTH, SOCK_STREAM, BTPROTO_RFCOMM);
 
     // bind socket to 1st available port of the first available local bluetooth adapter
+    bdaddr_t any = {0, 0, 0, 0xff, 0xff, 0xff};
     localAddr.rc_family = AF_BLUETOOTH;
-    localAddr.rc_bdaddr = *BDADDR_ANY;
+    localAddr.rc_bdaddr = any;
     uint8_t port = 0;
     if(DynamicBtBind(serverSocket, &localAddr, &port))
     {
