@@ -1,0 +1,2 @@
+obj-m := smartcam.o
+

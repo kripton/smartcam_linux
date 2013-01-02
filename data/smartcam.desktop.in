@@ -1,0 +1,10 @@
+[Desktop Entry]
+_Name=smartcam
+_Comment=Turns your camera phone into a handy webcam
+Exec=smartcam
+Terminal=false
+Type=Application
+StartupNotify=true
+Icon=smartcam
+Categories=GNOME;AudioVideo;
+

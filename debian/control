@@ -1,0 +1,12 @@
+Source: smartcam
+Section: unknown
+Priority: extra
+Maintainer: Ionut Dediu <deionut@yahoo.com>
+Build-Depends: debhelper (>= 7), autotools-dev
+Standards-Version: 3.8.0
+Homepage: <insert the upstream URL, if relevant>
+
+Package: smartcam
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Turns your camera phone into a handy webcam

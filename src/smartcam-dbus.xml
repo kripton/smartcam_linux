@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<node name="/org/gnome/smartcam">
+	<interface name="org.gnome.smartcam">
+		<annotation name="org.freedesktop.DBus.GLib.CSymbol" value="smartcam_dbus"/>
+		<method name="bring_to_front">
+		</method>
+	</interface>
+</node>
