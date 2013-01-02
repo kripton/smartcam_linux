@@ -35,6 +35,7 @@
 #include <media/v4l2-dev.h>
 #include <linux/version.h>
 //#include <linux/videodev2.h>
+#include <linux/sched.h>
 
 #ifdef CONFIG_VIDEO_V4L1_COMPAT
 /* Include V4L1 specific functions. Should be removed soon */
@@ -57,6 +58,7 @@
 #define SMARTCAM_NFORMATS 2
 
 //#define SMARTCAM_DEBUG
+#define SMARTCAM_DEBUG
 #undef SCAM_MSG				/* undef it, just in case */
 #ifdef SMARTCAM_DEBUG
 #     define SCAM_MSG(fmt, args...) printk(KERN_ALERT "smartcam:" fmt, ## args)
@@ -169,9 +171,9 @@ static int vidioc_s_fmt_cap(struct file *file, void *priv, struct v4l2_format *f
 		}
 	}
 
-	printk(KERN_ALERT "smartcam (%s): vidioc_s_fmt_cap called\n\t\twidth=%d; \
+        printk(KERN_ALERT "smartcam : vidioc_s_fmt_cap called\n\t\twidth=%d; \
 height=%d; pixelformat=%s\n\t\tfield=%d; bytesperline=%d; sizeimage=%d; colspace = %d; return EINVAL\n",
-	current->comm, f->fmt.pix.width, f->fmt.pix.height, (char*)&f->fmt.pix.pixelformat, 
+        /*current->comm,*/ f->fmt.pix.width, f->fmt.pix.height, (char*)&f->fmt.pix.pixelformat, 
 	f->fmt.pix.field, f->fmt.pix.bytesperline, f->fmt.pix.sizeimage, f->fmt.pix.colorspace);
 
 	return -EINVAL;
@@ -215,6 +217,7 @@ static int vidioc_reqbufs(struct file *file, void *priv, struct v4l2_requestbuff
 
 	if(reqbuf->type != V4L2_BUF_TYPE_VIDEO_CAPTURE)
 	{
+                SCAM_MSG("Bad memory type for v4l2_requestbuffers\n");
 		return -EINVAL;
 	}
 	if(reqbuf->memory != V4L2_MEMORY_MMAP)
@@ -242,9 +245,11 @@ static int vidioc_querybuf(struct file *file, void *priv, struct v4l2_buffer *vi
 		SCAM_MSG("vidioc_querybuf called - invalid buf type\n");
 		return -EINVAL;
 	}
+        vidbuf->memory = V4L2_MEMORY_MMAP;
+
 	if(vidbuf->memory != V4L2_MEMORY_MMAP)
 	{
-		SCAM_MSG("vidioc_querybuf called - invalid memory type\n");
+		SCAM_MSG("vidioc_querybuf called - invalid memory type(%d!=%d)\n", V4L2_MEMORY_MMAP, vidbuf->memory);
 		return -EINVAL;
 	}
 	vidbuf->length = SMARTCAM_BUFFER_SIZE;
@@ -454,17 +459,18 @@ static int vidioc_s_parm(struct file *file, void *priv, struct v4l2_streamparm *
 	File operations for the device
    ------------------------------------------------------------------*/
 
-static int smartcam_open(struct inode *inode, struct file *file)
+static int smartcam_open(/*struct inode *inode,*/ struct file *file)
 {
-	int minor = 0;
-	minor = iminor(inode);
-	SCAM_MSG("(%s) %s called (minor=%d)\n", current->comm, __FUNCTION__, minor);
+        //int minor = 0;
+        //minor = iminor(inode);
+        //SCAM_MSG("(%s) %s called (minor=%d)\n", current->comm, __FUNCTION__, minor);
+        SCAM_MSG("(%s) %s called\n", current->comm, __FUNCTION__);
 	return 0;
 }
 
 static ssize_t smartcam_read(struct file *file, char __user *data, size_t count, loff_t *f_pos)
 {
-	SCAM_MSG("(%s) %s called (count=%d, f_pos = %d)\n", current->comm, __FUNCTION__, count, (int) *f_pos);
+        SCAM_MSG("(%s) %s called (count=%d, f_pos = %d)\n", current->comm, __FUNCTION__, (int) count, (int) *f_pos);
 
 	if(*f_pos >= formats[format].sizeimage)
 		return 0;
@@ -515,7 +521,7 @@ static void rgb_to_yuyv(void)
 
 static ssize_t smartcam_write(struct file *file, const char __user *data, size_t count, loff_t *f_pos)
 {
-	SCAM_MSG("(%s) %s called (count=%d, f_pos = %d)\n", current->comm, __FUNCTION__, count, (int) *f_pos);
+	SCAM_MSG("(%s) %s called (count=%d, f_pos = %d)\n", current->comm, __FUNCTION__, (int) count, (int) *f_pos);
 
 	if (count >= SMARTCAM_RGB_FRAME_SIZE)
 	    count = SMARTCAM_RGB_FRAME_SIZE;
@@ -538,7 +544,7 @@ static unsigned int smartcam_poll(struct file *file, struct poll_table_struct *w
 {
 	int mask = (POLLOUT | POLLWRNORM);	/* writable */
 	if (last_read_frame != frame_sequence)
-	    mask |= (POLLIN | POLLRDNORM)	/* readable */
+	    mask |= (POLLIN | POLLRDNORM);	/* readable */
 
 	SCAM_MSG("(%s) %s called\n", current->comm, __FUNCTION__);
 
@@ -547,13 +553,13 @@ static unsigned int smartcam_poll(struct file *file, struct poll_table_struct *w
 	return mask;
 }
 
-static int smartcam_release(struct inode *inode, struct file *file)
+static int smartcam_release(/*struct inode *inode,*/ struct file *file)
 {
 	SCAM_MSG("(%s) %s called\n", current->comm, __FUNCTION__);
 	return 0;
 }
 
-static const struct file_operations smartcam_fops = {
+static const struct v4l2_file_operations smartcam_fops = {
 	.owner		= THIS_MODULE,
 	.open           = smartcam_open,
 	.release        = smartcam_release,
@@ -562,7 +568,7 @@ static const struct file_operations smartcam_fops = {
 	.poll		= smartcam_poll,
 	.ioctl          = video_ioctl2, /* V4L2 ioctl handler */
 	.mmap		= smartcam_mmap,
-	.llseek         = no_llseek,
+	/*.llseek         = no_llseek,*/
 };
 
 static const struct v4l2_ioctl_ops smartcam_ioctl_ops = {
@@ -596,7 +602,7 @@ static const struct v4l2_ioctl_ops smartcam_ioctl_ops = {
 
 static struct video_device smartcam_vid = {
 	.name		= "smartcam",
-	.vfl_type		= VID_TYPE_CAPTURE,
+	.vfl_type               = VFL_TYPE_GRABBER,
 	//.hardware	= 0,
 	.fops           = &smartcam_fops,
 	.minor		= -1,
